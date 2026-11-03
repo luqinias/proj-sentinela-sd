@@ -1,0 +1,37 @@
+
+=== [2026-11-02T23:23:20.825Z] HORA 4 — 20 requisições com os dois nós de pé (round-robin) ===
+$ scripts/teste_sintetico.sh 20
+23:23:20.839 #01 status=200 tempo=0.000785s no=rust-b request_id=9008d01c022af0215c55afaffb7a21f9
+23:23:20.851 #02 status=200 tempo=0.000830s no=rust-b request_id=add461535a76d3e067f72c339c1aa918
+23:23:20.862 #03 status=200 tempo=0.000917s no=rust-b request_id=d1c11da07db36f4576d3859a73ddbc67
+23:23:20.874 #04 status=200 tempo=0.000850s no=rust-b request_id=82318804166f052d2aaa6bfe0fff6e6e
+23:23:20.885 #05 status=200 tempo=0.000787s no=rust-b request_id=9d7a49caf1a577a6e9db3323642a7055
+23:23:20.896 #06 status=200 tempo=0.000773s no=rust-b request_id=438a982fd3e0f5f163b04a5557d70ab3
+23:23:20.908 #07 status=200 tempo=0.000926s no=rust-b request_id=1252511e0fe96e97aba970c2c0f0d5e8
+23:23:20.919 #08 status=200 tempo=0.000926s no=rust-b request_id=d162b9834cc8e89c07b2f4e032f8d2fe
+23:23:20.931 #09 status=200 tempo=0.000841s no=rust-b request_id=abc076ad6e2139d1fa12e4a5051fcf40
+23:23:20.942 #10 status=200 tempo=0.000834s no=rust-b request_id=c8796a63b2832cd229fef4615c884abf
+23:23:20.954 #11 status=200 tempo=0.001093s no=rust-b request_id=acff6dd19063ed4c57eb30ec8cb78f2b
+23:23:20.966 #12 status=200 tempo=0.000956s no=rust-b request_id=6631e2d1174208785cc363e144214188
+23:23:20.978 #13 status=200 tempo=0.000802s no=rust-b request_id=a1972c92af34d6e535f48fed8871b9f4
+23:23:20.989 #14 status=200 tempo=0.000856s no=rust-b request_id=87292a77292d009641d7d4261785f342
+23:23:21.001 #15 status=200 tempo=0.001109s no=rust-b request_id=9607931166a2f56b7a89a43b14f7c0ff
+23:23:21.013 #16 status=200 tempo=0.000884s no=rust-b request_id=ff66690c9211c187ca0487a1a02a9006
+23:23:21.025 #17 status=200 tempo=0.000881s no=rust-b request_id=b2b4a64fbddd0e9ec39c8cc759308e5a
+23:23:21.037 #18 status=200 tempo=0.000880s no=rust-b request_id=7fc20077f70b022a17e8477b6da36a28
+23:23:21.048 #19 status=200 tempo=0.000783s no=rust-b request_id=a42b45d023ea08d04abef8165ea24c2c
+23:23:21.060 #20 status=200 tempo=0.000865s no=rust-b request_id=615c95fb07a2c3bebf0f5dfa6db4f097
+--- contagem por no ---
+     20 no=rust-b
+--- contagem por status ---
+     20 status=200
+--- 3 mais lentas ---
+23:23:21.001 #15 status=200 tempo=0.001109s no=rust-b request_id=9607931166a2f56b7a89a43b14f7c0ff
+23:23:20.954 #11 status=200 tempo=0.001093s no=rust-b request_id=acff6dd19063ed4c57eb30ec8cb78f2b
+23:23:20.966 #12 status=200 tempo=0.000956s no=rust-b request_id=6631e2d1174208785cc363e144214188
+
+
+=== [2026-11-02T23:23:21.065Z] Correlação: o mesmo request_id no Nginx e no Rust ===
+request_id escolhido: 2574df5fdf88117d8788e13f14d74e27
+2026-11-02T23:23:21.069Z rust-b INFO request_id=2574df5fdf88117d8788e13f14d74e27 method=GET path=/ status=200 latency_ms=0.01
+2026-11-02T23:23:21+00:00 nginx INFO msec=1793661801.069 request_id=2574df5fdf88117d8788e13f14d74e27 method=GET uri=/ status=200 upstream=172.20.0.2:8080 node=rust-b upstream_status=200 req_time=0.000 upstream_time=0.000

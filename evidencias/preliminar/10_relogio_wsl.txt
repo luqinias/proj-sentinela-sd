@@ -1,0 +1,13 @@
+=== [2026-11-02T23:02:54Z] Saltos do relógio de parede no host WSL2 (kernel 6.6.87.2-microsoft-standard-WSL2) ===
+Contêineres compartilham o kernel do host: o mesmo salto aparece em todos os logs.
+$ scripts/medir_relogio.py 60
+23:03:00Z salto=-2.430s
+23:03:06Z salto=+5.143s
+23:03:33Z salto=-2.421s
+23:03:38Z salto=+5.144s
+--- 4 salto(s) em 60 s; soma=+5.437s; maior=+5.144s
+
+=== Mesmo teste DENTRO do contêiner watchdog (prova de que o relógio é compartilhado) ===
+23:04:06Z salto=-2.421s
+23:04:11Z salto=+5.144s
+--- 2 salto(s) em 30 s; soma=+2.723s; maior=+5.144s

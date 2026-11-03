@@ -1,0 +1,38 @@
+
+=== [2026-11-02T23:24:21.394Z] HORA 4 — Configuração quebrada de propósito (cópia; o Nginx em produção não é tocado) ===
+--- sem_ponto_virgula: diff contra o original ---
+  69c69
+  <       proxy_connect_timeout 1s;
+  ---
+  >       proxy_connect_timeout 1s
+--- nginx -t ---
+2026/11/02 23:24:21 [emerg] 1#1: invalid number of arguments in "proxy_connect_timeout" directive in /etc/nginx/nginx.conf:70
+nginx: [emerg] invalid number of arguments in "proxy_connect_timeout" directive in /etc/nginx/nginx.conf:70
+nginx: configuration file /etc/nginx/nginx.conf test failed
+
+--- host_inexistente: diff contra o original ---
+  51c51
+  <     server rust-b:8080 max_fails=3 fail_timeout=10s resolve;
+  ---
+  >     server rust-c:8080 max_fails=3 fail_timeout=10s;
+--- nginx -t ---
+2026/11/02 23:24:22 [emerg] 1#1: host not found in upstream "rust-c:8080" in /etc/nginx/nginx.conf:51
+nginx: [emerg] host not found in upstream "rust-c:8080" in /etc/nginx/nginx.conf:51
+nginx: configuration file /etc/nginx/nginx.conf test failed
+
+--- upstream_errado: diff contra o original ---
+  58c58
+  <       proxy_pass http://rust_pool;
+  ---
+  >       proxy_pass http://pool_errado;
+--- nginx -t ---
+2026/11/02 23:24:28 [emerg] 1#1: host not found in upstream "pool_errado" in /etc/nginx/nginx.conf:58
+nginx: [emerg] host not found in upstream "pool_errado" in /etc/nginx/nginx.conf:58
+nginx: configuration file /etc/nginx/nginx.conf test failed
+
+
+=== [2026-11-02T23:24:33.912Z] Configuração real continua válida ===
+$ docker compose exec -T nginx nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+

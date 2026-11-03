@@ -1,0 +1,123 @@
+
+=== [2026-11-02T23:22:51.944Z] HORA 3 — health checks de um nó saudável (de dentro da rede, a partir de rust-b) ===
+$ scripts/admin.sh live rust-a
+HTTP/1.1 200 OK
+content-type: text/plain; charset=utf-8
+x-node: rust-a
+x-request-id: -
+content-length: 12
+date: Mon, 02 Nov 2026 23:22:52 GMT
+
+live rust-a
+
+$ scripts/admin.sh check rust-a
+HTTP/1.1 200 OK
+content-type: text/plain; charset=utf-8
+x-node: rust-a
+x-request-id: -
+content-length: 13
+date: Mon, 02 Nov 2026 23:22:52 GMT
+
+ready rust-a
+
+
+=== [2026-11-02T23:22:52.215Z] Tornando rust-a NÃO PRONTO (/admin/ready?v=0) ===
+$ scripts/admin.sh ready rust-a 0
+HTTP/1.1 200 OK
+content-type: text/plain; charset=utf-8
+x-node: rust-a
+x-request-id: -
+content-length: 15
+date: Mon, 02 Nov 2026 23:22:52 GMT
+
+rust-a ready=0
+
+
+=== [2026-11-02T23:22:52.344Z] rust-a: live continua 200 (processo vivo), ready vira 503 (não recebe tráfego) ===
+$ scripts/admin.sh live rust-a
+HTTP/1.1 200 OK
+content-type: text/plain; charset=utf-8
+x-node: rust-a
+x-request-id: -
+content-length: 12
+date: Mon, 02 Nov 2026 23:22:52 GMT
+
+live rust-a
+
+$ scripts/admin.sh check rust-a
+HTTP/1.1 503 Service Unavailable
+content-type: text/plain; charset=utf-8
+x-node: rust-a
+x-request-id: -
+content-length: 17
+date: Mon, 02 Nov 2026 23:22:52 GMT
+
+not-ready rust-a
+
+
+=== [2026-11-02T23:22:52.612Z] Tráfego de usuário com rust-a não pronto: 10 requisições pelo Nginx ===
+$ scripts/teste_sintetico.sh 10
+23:22:52.628 #01 status=200 tempo=0.000981s no=rust-b request_id=997b4c136746af72f96f7c569d94c661
+23:22:52.641 #02 status=200 tempo=0.001244s no=rust-b request_id=ec70b6f03c4d250129439e90e8e79103
+23:22:52.654 #03 status=200 tempo=0.000876s no=rust-b request_id=bacff8dd1ac7d1203c4f6460a8fba6f5
+23:22:52.668 #04 status=200 tempo=0.001290s no=rust-b request_id=7b1245f806070f6aa65e4a8875ac8485
+23:22:52.680 #05 status=200 tempo=0.000917s no=rust-b request_id=75cf6edc837c9cf550cab3c5d19cc1b5
+23:22:52.692 #06 status=200 tempo=0.001130s no=rust-b request_id=62d8c64eb8e676399a86a9225773ec8c
+23:22:52.703 #07 status=200 tempo=0.000845s no=rust-b request_id=b8b849901ad61799dce76df8d282134c
+23:22:52.715 #08 status=200 tempo=0.000886s no=rust-b request_id=677f8cfe26e78cc16698600728f99590
+23:22:52.726 #09 status=200 tempo=0.000832s no=rust-b request_id=5af359d1d2e86a01afc5f62ae5346667
+23:22:52.738 #10 status=200 tempo=0.000827s no=rust-b request_id=dc4a17d160c0f44d3b4c895c23a40fe4
+--- contagem por no ---
+     10 no=rust-b
+--- contagem por status ---
+     10 status=200
+--- 3 mais lentas ---
+23:22:52.668 #04 status=200 tempo=0.001290s no=rust-b request_id=7b1245f806070f6aa65e4a8875ac8485
+23:22:52.641 #02 status=200 tempo=0.001244s no=rust-b request_id=ec70b6f03c4d250129439e90e8e79103
+23:22:52.692 #06 status=200 tempo=0.001130s no=rust-b request_id=62d8c64eb8e676399a86a9225773ec8c
+
+
+=== [2026-11-02T23:22:52.743Z] Log do Nginx: upstream_status '503, 200' = tentou A, recebeu 503, refez em B ===
+2026-11-02T23:22:52+00:00 nginx INFO msec=1793661772.619 request_id=997b4c136746af72f96f7c569d94c661 method=GET uri=/ status=200 upstream=172.20.0.2:8080 node=rust-b upstream_status=200 req_time=0.000 upstream_time=0.000
+2026-11-02T23:22:52+00:00 nginx INFO msec=1793661772.632 request_id=ec70b6f03c4d250129439e90e8e79103 method=GET uri=/ status=200 upstream=172.20.0.3:8080, 172.20.0.2:8080 node=rust-b upstream_status=503, 200 req_time=0.000 upstream_time=0.000, 0.000
+2026-11-02T23:22:52+00:00 nginx INFO msec=1793661772.645 request_id=bacff8dd1ac7d1203c4f6460a8fba6f5 method=GET uri=/ status=200 upstream=172.20.0.2:8080 node=rust-b upstream_status=200 req_time=0.000 upstream_time=0.000
+2026-11-02T23:22:52+00:00 nginx INFO msec=1793661772.658 request_id=7b1245f806070f6aa65e4a8875ac8485 method=GET uri=/ status=200 upstream=172.20.0.3:8080, 172.20.0.2:8080 node=rust-b upstream_status=503, 200 req_time=0.000 upstream_time=0.000, 0.000
+2026-11-02T23:22:52+00:00 nginx INFO msec=1793661772.672 request_id=75cf6edc837c9cf550cab3c5d19cc1b5 method=GET uri=/ status=200 upstream=172.20.0.2:8080 node=rust-b upstream_status=200 req_time=0.001 upstream_time=0.000
+2026-11-02T23:22:52+00:00 nginx INFO msec=1793661772.684 request_id=62d8c64eb8e676399a86a9225773ec8c method=GET uri=/ status=200 upstream=172.20.0.3:8080, 172.20.0.2:8080 node=rust-b upstream_status=503, 200 req_time=0.001 upstream_time=0.000, 0.001
+2026-11-02T23:22:52+00:00 nginx INFO msec=1793661772.696 request_id=b8b849901ad61799dce76df8d282134c method=GET uri=/ status=200 upstream=172.20.0.2:8080 node=rust-b upstream_status=200 req_time=0.001 upstream_time=0.000
+2026-11-02T23:22:52+00:00 nginx INFO msec=1793661772.707 request_id=677f8cfe26e78cc16698600728f99590 method=GET uri=/ status=200 upstream=172.20.0.2:8080 node=rust-b upstream_status=200 req_time=0.000 upstream_time=0.000
+2026-11-02T23:22:52+00:00 nginx INFO msec=1793661772.719 request_id=5af359d1d2e86a01afc5f62ae5346667 method=GET uri=/ status=200 upstream=172.20.0.2:8080 node=rust-b upstream_status=200 req_time=0.001 upstream_time=0.000
+2026-11-02T23:22:52+00:00 nginx INFO msec=1793661772.730 request_id=dc4a17d160c0f44d3b4c895c23a40fe4 method=GET uri=/ status=200 upstream=172.20.0.2:8080 node=rust-b upstream_status=200 req_time=0.000 upstream_time=0.000
+
+=== [2026-11-02T23:22:52.809Z] aguardando 18 s (watchdog precisa de 3 sondagens x 5 s para declarar DOWN) ===
+
+=== [2026-11-02T23:23:13.540Z] Log do watchdog (falhas consecutivas e transição DOWN) ===
+2026-11-02T23:22:55.931Z watchdog WARN alvo=rust-a tipo=readiness resultado=falha status=503 erro=http_503 falhas_consecutivas=1/3 latencia_ms=7
+2026-11-02T23:23:00.930Z watchdog WARN alvo=rust-a tipo=readiness resultado=falha status=503 erro=http_503 falhas_consecutivas=2/3 latencia_ms=5
+2026-11-02T23:23:05.930Z watchdog WARN alvo=rust-a tipo=readiness resultado=falha status=503 erro=http_503 falhas_consecutivas=3/3 latencia_ms=6
+2026-11-02T23:23:05.930Z watchdog ERROR alvo=rust-a tipo=readiness transicao=DOWN motivo=3_falhas_consecutivas ultimo_erro=http_503
+
+=== [2026-11-02T23:23:13.609Z] Restaurando prontidão de rust-a ===
+$ scripts/admin.sh ready rust-a 1
+HTTP/1.1 200 OK
+content-type: text/plain; charset=utf-8
+x-node: rust-a
+x-request-id: -
+content-length: 15
+date: Mon, 02 Nov 2026 23:23:13 GMT
+
+rust-a ready=1
+
+
+=== [2026-11-02T23:23:13.748Z] aguardando 7 s (uma sondagem bem-sucedida basta para voltar a UP) ===
+2026-11-02T23:23:13.675Z watchdog INFO ciclo resumo rust-a=DOWN rust-b=UP sintetico-nginx=UP
+2026-11-02T23:23:18.654Z watchdog WARN alvo=rust-a tipo=readiness transicao=UP apos_falhas=4 latencia_ms=3
+2026-11-02T23:23:18.675Z watchdog INFO ciclo resumo rust-a=UP rust-b=UP sintetico-nginx=UP
+
+=== [2026-11-02T23:23:20.816Z] Tentativa de acessar /admin e /metrics pela porta pública (deve ser 404) ===
+$ curl -s -o /dev/null -w GET /admin/ready?v=0 -> %{http_code}\n http://localhost:8080/admin/ready?v=0
+GET /admin/ready?v=0 -> 404
+
+$ curl -s -o /dev/null -w GET /metrics          -> %{http_code}\n http://localhost:8080/metrics
+GET /metrics          -> 404
+

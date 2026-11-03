@@ -1,0 +1,128 @@
+# =============================================================================
+# Operação Sentinel — regras de alerta (entrega D)
+# Os 3 alertas obrigatórios vêm primeiro; depois, alertas complementares.
+# Cada alerta tem: severidade, dono, condição acionável e procedimento (runbook).
+# Sem Alertmanager: os alertas são vistos em http://127.0.0.1:9090/alerts
+# (limitação declarada no plano de monitoramento).
+# =============================================================================
+groups:
+  - name: sentinel-obrigatorios
+    rules:
+      # 1) Nó DOWN na visão do watchdog -----------------------------------------
+      - alert: NoDown
+        expr: watchdog_target_down{kind="readiness"} == 1
+        for: 5s
+        labels: { severidade: alta, dono: plantao }
+        annotations:
+          resumo: "{{ $labels.target }} DOWN na visão do watchdog"
+          limiar: >-
+            O watchdog só marca DOWN após 3 falhas x 5 s (~15 s), o que evita
+            alarme por perda isolada; o "for: 5s" exige mais uma coleta
+            confirmando. Detecção total esperada: ~20-25 s.
+          resposta: >-
+            1) NÃO reiniciar de imediato. 2) Salvar evidências (logs nginx/rust/
+            watchdog, docker compose ps). 3) Testar o nó de OUTRO ponto
+            (docker compose exec rust-b curl -i http://<no>:8080/health/ready)
+            e conferir no log do Nginx se o nó ainda atende. 4) Só então decidir
+            retirar/reiniciar.
+
+      # 2) Taxa de erro 5xx nas rotas de usuário --------------------------------
+      - alert: TaxaErro5xxAlta
+        expr: |
+          (
+            sum(rate(app_requests_total{route=~"/|/erro",status=~"5..",status!="503"}[2m]))
+            /
+            sum(rate(app_requests_total{route=~"/|/erro"}[2m]))
+          ) > 0.02
+        for: 30s
+        labels: { severidade: alta, dono: plantao }
+        annotations:
+          resumo: "Mais de 2% das respostas de usuário são 5xx (janela de 2 min)"
+          limiar: >-
+            Abaixo de 2% é ruído (1 erro a cada 50 requisições); acima disso o
+            usuário percebe. Janela de 2 min suaviza picos; "for: 30s" evita
+            disparo por uma rajada única. Sondas e /metrics ficam fora do
+            cálculo para não diluir a taxa. 503 fica fora do numerador: é a
+            recusa de um nó NÃO PRONTO, que o Nginx refaz no outro nó (o
+            usuário recebe 200). Contá-la gerou falso positivo em 02/11
+            (evidência 05c). Limitação: a métrica é do nó, não da borda.
+          resposta: >-
+            Ver por nó: sum by (node,status)(rate(app_requests_total[2m])).
+            Se for um nó só, retirar do balanceamento (/admin/ready?v=0); se
+            forem os dois, é bug comum: balanceamento não resolve, investigar
+            a mudança recente.
+
+      # 3) Monitor parado (quem vigia o vigia) ----------------------------------
+      - alert: MonitorParado
+        expr: time() - max(max_over_time(watchdog_last_probe_timestamp_seconds[10m])) > 30
+        for: 0s
+        labels: { severidade: media, dono: equipe }
+        annotations:
+          resumo: "Última sondagem do watchdog há mais de 30 s"
+          limiar: >-
+            30 s = 6 intervalos de 5 s sem sondar: não é atraso pontual. Usa
+            max_over_time para continuar disparando mesmo quando a métrica
+            some (watchdog parado = série ausente).
+          resposta: >-
+            Salvar logs do watchdog (docker compose logs watchdog) e só então
+            reiniciá-lo. Enquanto ele estiver parado, NoDown não é confiável:
+            conferir os nós manualmente.
+
+  - name: sentinel-complementares
+    rules:
+      # Teste sintético: o caminho real do usuário (Nginx -> nó) falha ----------
+      - alert: TesteSinteticoFalhando
+        expr: watchdog_target_down{kind="sintetico"} == 1
+        for: 5s
+        labels: { severidade: critica, dono: plantao }
+        annotations:
+          resumo: "GET / via Nginx falhou 3 vezes seguidas"
+          limiar: "Mesmo critério do NoDown (3 x 5 s). Aqui o usuário já é afetado."
+          resposta: "Investigar a cadeia inteira: nginx (logs, nginx -t), os dois nós e a rede."
+
+      # Latência p95 da rota de usuário ------------------------------------------
+      - alert: LatenciaP95Alta
+        expr: |
+          histogram_quantile(0.95,
+            sum by (node, le) (rate(app_request_duration_seconds_bucket[2m]))
+          ) > 1
+        for: 1m
+        labels: { severidade: media, dono: plantao }
+        annotations:
+          resumo: "p95 de {{ $labels.node }} acima de 1 s"
+          limiar: >-
+            1 s = 1/3 do proxy_read_timeout (3 s): alerta antes de o Nginx
+            começar a estourar timeout e fazer retry (que amplifica carga).
+          resposta: "Ver app_artificial_delay_ms e app_inflight_requests do nó; comparar com o outro nó."
+
+      # Coleta falhando: métrica ausente ----------------------------------------
+      - alert: ColetaFalhando
+        expr: up{job=~"rust|watchdog"} == 0
+        for: 15s
+        labels: { severidade: media, dono: equipe }
+        annotations:
+          resumo: "Prometheus não consegue coletar {{ $labels.instance }}"
+          limiar: "3 coletas seguidas (3 x 5 s) sem resposta."
+          resposta: "Comparar com o watchdog: se ele vê o nó UP, o problema é a coleta/rede do Prometheus, não o nó."
+
+      # Reinício em loop ----------------------------------------------------------
+      - alert: ReinicioEmLoop
+        expr: changes(app_start_time_seconds[10m]) > 2
+        for: 0s
+        labels: { severidade: alta, dono: plantao }
+        annotations:
+          resumo: "{{ $labels.node }} reiniciou mais de 2 vezes em 10 min"
+          limiar: "Um reinício é recuperação; três em 10 min é sintoma (crash loop)."
+          resposta: "Não reiniciar de novo. Salvar logs e investigar a causa."
+
+      # Flapping: watchdog oscilando UP/DOWN -------------------------------------
+      - alert: WatchdogFlapping
+        # changes() conta mudanças reais do gauge; increase() extrapolava o
+        # contador e disparou com só 2 ciclos (falso positivo, evidência 05b).
+        expr: changes(watchdog_target_up{kind="readiness"}[10m]) >= 6
+        for: 0s
+        labels: { severidade: media, dono: equipe }
+        annotations:
+          resumo: "{{ $labels.target }} oscila entre UP e DOWN"
+          limiar: "3 ciclos completos DOWN->UP (6 mudanças) em 10 min indicam nó instável ou rede intermitente; 1 ou 2 ciclos são experimentos/manutenção."
+          resposta: "Verificar latência da sonda vs TIMEOUT (2 s) e perda entre watchdog e nó."

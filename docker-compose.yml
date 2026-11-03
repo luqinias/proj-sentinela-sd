@@ -1,0 +1,83 @@
+# =============================================================================
+# Operação Sentinel — topologia (entrega B). Base: Apêndice A.1.
+# Portas publicadas no host:
+#   8080 -> nginx:80            (única porta "de usuário")
+#   127.0.0.1:9090 -> prometheus (somente local, não acessível pela rede)
+# rust-a, rust-b (8080) e watchdog (9100) NÃO são publicados: só rede interna.
+# =============================================================================
+name: sentinel
+
+x-rust-app: &rust-app
+  build: ./rust-app
+  image: sentinel-rust-app:0.1.0
+  networks: [sentinel]
+  # Liveness pelo Docker: o processo responde? (NÃO usa readiness)
+  healthcheck:
+    test: ["CMD", "curl", "-fsS", "--max-time", "2", "http://localhost:8080/health/live"]
+    interval: 5s
+    timeout: 2s
+    retries: 3
+    start_period: 5s
+  # Reinicia só se o processo morrer, no máximo 3 vezes: evita reinício em loop.
+  # Um "docker compose stop" manual NÃO é desfeito por esta política.
+  restart: on-failure:3
+
+services:
+  nginx:
+    image: nginx:1.27.5-alpine          # versão fixada (origem: Docker Hub oficial)
+    ports: ["8080:80"]                  # única porta publicada no host
+    volumes: ["./nginx/nginx.conf:/etc/nginx/nginx.conf:ro"]
+    depends_on: [rust-a, rust-b]
+    networks: [sentinel]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "-T", "2", "http://127.0.0.1/nginx/live"]   # local, não depende dos nós
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: on-failure:3
+
+  rust-a:
+    <<: *rust-app
+    environment: { NODE_NAME: rust-a }
+
+  rust-b:
+    <<: *rust-app
+    environment: { NODE_NAME: rust-b }
+
+  watchdog:
+    build: ./watchdog
+    image: sentinel-watchdog:0.1.0
+    environment:
+      ALVOS: "rust-a=http://rust-a:8080,rust-b=http://rust-b:8080"
+      INTERVALO: "5"          # sonda a cada 5 s
+      TIMEOUT: "2"            # espera no máximo 2 s por resposta
+      LIMITE_FALHAS: "3"      # DOWN só após 3 falhas seguidas (~15 s)
+      SINTETICO: "http://nginx:80/"   # teste sintético: caminho real do usuário
+    depends_on: [rust-a, rust-b, nginx]
+    networks: [sentinel]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "-T", "2", "http://127.0.0.1:9100/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: on-failure:3
+
+  prometheus:
+    image: prom/prometheus:v2.53.0      # versão fixada (origem: Docker Hub prom/)
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=2d
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alertas.yml:/etc/prometheus/alertas.yml:ro
+    ports: ["127.0.0.1:9090:9090"]      # somente local
+    networks: [sentinel]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "-T", "2", "http://127.0.0.1:9090/-/healthy"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: on-failure:3
+
+networks:
+  sentinel: {}

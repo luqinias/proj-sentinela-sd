@@ -1,0 +1,135 @@
+
+=== [2026-11-02T23:00:49.276Z] HORA 4 — Falha de um nó: docker compose stop rust-a ===
+PREVISÃO: o serviço continua (200 via rust-b). A 1a requisição destinada a A
+falha na conexão e é refeita em B (retry limitado); após 3 falhas o Nginx tira A
+do pool por 10 s. O watchdog marca A como DOWN em ~15 s.
+$ docker compose stop rust-a
+ Container sentinel-rust-a-1 Stopping 
+ Container sentinel-rust-a-1 Stopped 
+
+
+=== [2026-11-02T23:00:49.509Z] 20 requisições logo após parar rust-a ===
+$ scripts/teste_sintetico.sh 20
+23:00:50.528 #01 status=200 tempo=1.092149s no=rust-b request_id=74f5d615c6402428fe020b77c4aaed4b
+23:00:50.542 #02 status=200 tempo=0.001123s no=rust-b request_id=23c21911b0ee93065c8da31a7b218f71
+23:00:51.567 #03 status=200 tempo=1.093423s no=rust-b request_id=daa32b91a13bc6eea5619fa76171efb2
+23:00:51.589 #04 status=200 tempo=0.001754s no=rust-b request_id=61149098a6d7c64819417b625e810489
+23:00:51.614 #05 status=200 tempo=0.002711s no=rust-b request_id=f7f495a6a226c461655d0e29ffab3f67
+23:00:51.635 #06 status=200 tempo=0.001426s no=rust-b request_id=e6fb2a113a1225c9df35d689ed7f67ae
+23:00:51.657 #07 status=200 tempo=0.003151s no=rust-b request_id=02b9604aec3f6c97b0f9558683f2eff1
+23:00:51.681 #08 status=200 tempo=0.002026s no=rust-b request_id=3d03dd29d0d380fbe8e7bb2b5070dbf8
+23:00:51.702 #09 status=200 tempo=0.001902s no=rust-b request_id=ceb7880790f80f0952ecde1ca7db1e9b
+23:00:51.718 #10 status=200 tempo=0.001376s no=rust-b request_id=5a92a9883976f03af3ce8e9b2a65e29d
+23:00:51.738 #11 status=200 tempo=0.001833s no=rust-b request_id=d07444b58af81bc501233994120a2d94
+23:00:51.760 #12 status=200 tempo=0.001886s no=rust-b request_id=9bca30672bd79c775e3b2e2107e6d4dd
+23:00:51.777 #13 status=200 tempo=0.001204s no=rust-b request_id=8089a934d0411a2801eaf1bc64f01ca4
+23:00:51.793 #14 status=200 tempo=0.001607s no=rust-b request_id=fcdbde915f9c54e44aa4fe48dd6a0f41
+23:00:51.810 #15 status=200 tempo=0.001308s no=rust-b request_id=8cd64b08a83eb68dd0190def2f3b6abc
+23:00:51.827 #16 status=200 tempo=0.001797s no=rust-b request_id=d7d87c2f6248ac0a80e0b741e296a9e8
+23:00:51.845 #17 status=200 tempo=0.002686s no=rust-b request_id=1862f11304fbcf90652c0227cd4d450f
+23:00:51.860 #18 status=200 tempo=0.001572s no=rust-b request_id=7dc8de5d5e818cf2e49c0397b226ce21
+23:00:51.879 #19 status=200 tempo=0.001073s no=rust-b request_id=de36ee9e85ea5e0cdcf10f9dfeb84d23
+23:00:51.896 #20 status=200 tempo=0.001284s no=rust-b request_id=f19ec5932a3efbb8f4ccfcc54f54ee85
+--- contagem por no ---
+     20 no=rust-b
+--- contagem por status ---
+     20 status=200
+--- 3 mais lentas ---
+23:00:51.567 #03 status=200 tempo=1.093423s no=rust-b request_id=daa32b91a13bc6eea5619fa76171efb2
+23:00:50.528 #01 status=200 tempo=1.092149s no=rust-b request_id=74f5d615c6402428fe020b77c4aaed4b
+23:00:51.657 #07 status=200 tempo=0.003151s no=rust-b request_id=02b9604aec3f6c97b0f9558683f2eff1
+
+
+=== [2026-11-02T23:00:51.902Z] Log do Nginx (upstream com 2 endereços = retry) e error_log ===
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.643 request_id=02b9604aec3f6c97b0f9558683f2eff1 method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.001 upstream_time=0.001
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.663 request_id=3d03dd29d0d380fbe8e7bb2b5070dbf8 method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.001 upstream_time=0.000
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.688 request_id=ceb7880790f80f0952ecde1ca7db1e9b method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.001 upstream_time=0.001
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.707 request_id=5a92a9883976f03af3ce8e9b2a65e29d method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.001 upstream_time=0.000
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.723 request_id=d07444b58af81bc501233994120a2d94 method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.000 upstream_time=0.000
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.746 request_id=9bca30672bd79c775e3b2e2107e6d4dd method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.001 upstream_time=0.001
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.765 request_id=8089a934d0411a2801eaf1bc64f01ca4 method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.000 upstream_time=0.000
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.782 request_id=fcdbde915f9c54e44aa4fe48dd6a0f41 method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.000 upstream_time=0.001
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.798 request_id=8cd64b08a83eb68dd0190def2f3b6abc method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.001 upstream_time=0.000
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.817 request_id=d7d87c2f6248ac0a80e0b741e296a9e8 method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.000 upstream_time=0.000
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.834 request_id=1862f11304fbcf90652c0227cd4d450f method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.001 upstream_time=0.000
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.849 request_id=7dc8de5d5e818cf2e49c0397b226ce21 method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.000 upstream_time=0.000
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.865 request_id=de36ee9e85ea5e0cdcf10f9dfeb84d23 method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.001 upstream_time=0.001
+2026-11-02T23:00:51+00:00 nginx INFO msec=1793660451.884 request_id=f19ec5932a3efbb8f4ccfcc54f54ee85 method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-b upstream_status=200 req_time=0.000 upstream_time=0.000
+
+=== [2026-11-02T23:00:51.987Z] aguardando 20 s (watchdog: 3 falhas consecutivas -> DOWN; Prometheus: alerta NoDown) ===
+
+=== [2026-11-02T23:01:14.712Z] Log do watchdog ===
+2026-11-02T23:00:45.503Z watchdog WARN alvo=rust-a tipo=readiness transicao=UP apos_falhas=4 latencia_ms=2
+2026-11-02T23:00:56.859Z watchdog WARN alvo=rust-a tipo=readiness resultado=falha status=0 erro=URLError:[Errno_-2]_Name_does_not_resolve falhas_consecutivas=1/3 latencia_ms=3636
+2026-11-02T23:01:01.070Z watchdog WARN alvo=rust-a tipo=readiness resultado=falha status=0 erro=URLError:[Errno_-2]_Name_does_not_resolve falhas_consecutivas=2/3 latencia_ms=2847
+2026-11-02T23:01:06.067Z watchdog WARN alvo=rust-a tipo=readiness resultado=falha status=0 erro=URLError:[Errno_-2]_Name_does_not_resolve falhas_consecutivas=3/3 latencia_ms=2844
+2026-11-02T23:01:06.067Z watchdog ERROR alvo=rust-a tipo=readiness transicao=DOWN motivo=3_falhas_consecutivas ultimo_erro=URLError:[Errno_-2]_Name_does_not_resolve
+2026-11-02T23:01:11.086Z watchdog WARN alvo=rust-a tipo=readiness resultado=falha status=0 erro=URLError:[Errno_-2]_Name_does_not_resolve falhas_consecutivas=4/3 latencia_ms=2863
+
+=== [2026-11-02T23:01:14.780Z] Métricas no Prometheus ===
+watchdog_target_down:
+  {__name__="watchdog_target_down",instance="watchdog:9100",job="watchdog",kind="readiness",target="rust-a"} => 1
+  {__name__="watchdog_target_down",instance="watchdog:9100",job="watchdog",kind="readiness",target="rust-b"} => 0
+  {__name__="watchdog_target_down",instance="watchdog:9100",job="watchdog",kind="sintetico",target="sintetico-nginx"} => 0
+up{job="rust"}:
+  {__name__="up",instance="rust-a:8080",job="rust"} => 0
+  {__name__="up",instance="rust-b:8080",job="rust"} => 1
+
+=== [2026-11-02T23:01:14.874Z] Alertas no Prometheus ===
+  NoDown                   estado=pending  alvo=rust-a           sev=alta    desde=2026-11-02T23:01:14.154
+  ColetaFalhando           estado=firing   alvo=rust-a:8080      sev=media   desde=2026-11-02T23:00:59.443
+
+=== [2026-11-02T23:01:14.920Z] RECUPERAÇÃO: docker compose start rust-a ===
+$ docker compose start rust-a
+ Container sentinel-rust-a-1 Starting 
+ Container sentinel-rust-a-1 Started 
+
+
+=== [2026-11-02T23:01:15.389Z] aguardando 10 s (rust-a sobe, watchdog vê UP na próxima sondagem) ===
+2026-11-02T23:01:15.732Z watchdog INFO ciclo resumo rust-a=UP rust-b=UP sintetico-nginx=UP
+2026-11-02T23:01:18.246Z watchdog INFO ciclo resumo rust-a=UP rust-b=UP sintetico-nginx=UP
+2026-11-02T23:01:23.247Z watchdog INFO ciclo resumo rust-a=UP rust-b=UP sintetico-nginx=UP
+2026-11-02T23:01:15.374Z rust-a INFO evento=startup porta=8080 ready=1 atraso_ms=0
+
+=== [2026-11-02T23:01:28.256Z] 20 requisições após a recuperação (A volta a receber tráfego) ===
+$ scripts/teste_sintetico.sh 20
+23:01:28.271 #01 status=200 tempo=0.000960s no=rust-b request_id=cf951227f3f9bea8d66237b777832fca
+23:01:28.284 #02 status=200 tempo=0.001037s no=rust-a request_id=d7e8c7e597aafabbedb4aefcd8f464c7
+23:01:28.297 #03 status=200 tempo=0.000986s no=rust-b request_id=393949ce5852af7a1bfc4cc4781b1b0b
+23:01:28.310 #04 status=200 tempo=0.001246s no=rust-a request_id=cd96b37cca4deaa65f86b52707edf8b3
+23:01:28.325 #05 status=200 tempo=0.001383s no=rust-b request_id=7da540e2201b6780df388d162922b35b
+23:01:28.338 #06 status=200 tempo=0.001059s no=rust-a request_id=eab8399e277836f24e0468e3bf3c83e8
+23:01:28.350 #07 status=200 tempo=0.000893s no=rust-b request_id=cb6dd032b7de0a875c43b707b4d2b587
+23:01:28.363 #08 status=200 tempo=0.000896s no=rust-a request_id=20a3a6622c53120d5c18f59900263cba
+23:01:28.376 #09 status=200 tempo=0.000927s no=rust-b request_id=721d442677b62aa99adf1fc231adecc9
+23:01:28.389 #10 status=200 tempo=0.001063s no=rust-a request_id=4a6e1b7da3450c8c8a120d11bb997927
+23:01:28.403 #11 status=200 tempo=0.000960s no=rust-b request_id=d8350338a9fe6609487cce66d1ed6a0a
+23:01:28.416 #12 status=200 tempo=0.001306s no=rust-a request_id=0d43defe3ab2e3d0f116ee5ee08637d4
+23:01:28.430 #13 status=200 tempo=0.001249s no=rust-b request_id=73b764c8b544410e7387121749505cf0
+23:01:28.444 #14 status=200 tempo=0.000975s no=rust-a request_id=37e9457ff2391bc707e3e5879d8bf480
+23:01:28.458 #15 status=200 tempo=0.001096s no=rust-b request_id=93a30b1e79694a051a27a45f1b0cc05f
+23:01:28.471 #16 status=200 tempo=0.000972s no=rust-a request_id=d68c2ef043ee291e0562ab2d4ab2669f
+23:01:28.483 #17 status=200 tempo=0.001081s no=rust-b request_id=e71ce1a8784f7244eeee8751441cd1e7
+23:01:28.496 #18 status=200 tempo=0.000931s no=rust-a request_id=9abdc5928d31496b2fe61784599deaa3
+23:01:28.509 #19 status=200 tempo=0.001047s no=rust-b request_id=04d115159fb5d8df3d996f09432170fc
+23:01:28.522 #20 status=200 tempo=0.000961s no=rust-a request_id=699c8d989eb46076c32f09b1c4c22d33
+--- contagem por no ---
+     10 no=rust-a
+     10 no=rust-b
+--- contagem por status ---
+     20 status=200
+--- 3 mais lentas ---
+23:01:28.325 #05 status=200 tempo=0.001383s no=rust-b request_id=7da540e2201b6780df388d162922b35b
+23:01:28.416 #12 status=200 tempo=0.001306s no=rust-a request_id=0d43defe3ab2e3d0f116ee5ee08637d4
+23:01:28.430 #13 status=200 tempo=0.001249s no=rust-b request_id=73b764c8b544410e7387121749505cf0
+
+
+=== [2026-11-02T23:01:28.527Z] Sem reinício em loop: RestartCount do Docker e reinícios vistos pelo Prometheus ===
+rust-a RestartCount=0
+rust-b RestartCount=0
+changes(app_start_time_seconds[10m]):
+  {instance="rust-a:8080",job="rust",node="rust-a"} => 1
+  {instance="rust-b:8080",job="rust",node="rust-b"} => 0
+
+=== [2026-11-02T23:01:28.613Z] Alertas após recuperação ===
+  WatchdogFlapping         estado=firing   alvo=rust-a           sev=media   desde=2026-11-02T23:01:24.443

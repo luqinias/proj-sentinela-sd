@@ -1,0 +1,115 @@
+
+━━━ PASSO 1 — Estado inicial (30 s) ━━━
+PREVISÃO: 5 serviços Up (healthy); só 8080 e 127.0.0.1:9090 publicadas.
+$ date -u +%T; docker compose ps --format 'table {{.Service}}\t{{.Status}}\t{{.Ports}}'
+23:24:54
+SERVICE      STATUS                        PORTS
+nginx        Up 2 minutes (healthy)        0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+prometheus   Up 2 minutes (healthy)        127.0.0.1:9090->9090/tcp
+rust-a       Up About a minute (healthy)   8080/tcp
+rust-b       Up 2 minutes (healthy)        8080/tcp
+watchdog     Up 2 minutes (healthy)        9100/tcp
+
+━━━ PASSO 2 — Fluxo normal (45 s) ━━━
+PREVISÃO: 6 requisições alternando A,B,A,B…; o mesmo request_id no Nginx e no Rust.
+$ scripts/teste_sintetico.sh 6
+23:24:54.500 #01 status=200 tempo=0.001041s no=rust-a request_id=8160f6fa1d7f17d69851d951d8421397
+23:24:54.512 #02 status=200 tempo=0.000999s no=rust-b request_id=b4a809c179c0b93bf8e891cbb026a535
+23:24:54.525 #03 status=200 tempo=0.001017s no=rust-a request_id=c415c03943312658ed0b9419c59fee02
+23:24:54.537 #04 status=200 tempo=0.001013s no=rust-b request_id=cad0e24853217a489509673f421a981f
+23:24:54.550 #05 status=200 tempo=0.001019s no=rust-a request_id=433e637a5a14cac518dd0209f134f386
+23:24:54.562 #06 status=200 tempo=0.000876s no=rust-b request_id=937e38e8632de36c85421ce16e0a3c14
+--- contagem por no ---
+      3 no=rust-a
+      3 no=rust-b
+--- contagem por status ---
+      6 status=200
+--- 3 mais lentas ---
+23:24:54.500 #01 status=200 tempo=0.001041s no=rust-a request_id=8160f6fa1d7f17d69851d951d8421397
+23:24:54.550 #05 status=200 tempo=0.001019s no=rust-a request_id=433e637a5a14cac518dd0209f134f386
+23:24:54.525 #03 status=200 tempo=0.001017s no=rust-a request_id=c415c03943312658ed0b9419c59fee02
+$ rid=$(curl -s -D - -o /dev/null localhost:8080/ | tr -d '\r' | awk -F': ' 'tolower($1)=="x-request-id"{print $2}'); sleep 1; docker compose logs --no-log-prefix nginx rust-a rust-b | grep $rid
+2026-11-02T23:24:54.571Z rust-a INFO request_id=6285ab92c370c7f763fb8fa07e737e39 method=GET path=/ status=200 latency_ms=0.01
+2026-11-02T23:24:54+00:00 nginx INFO msec=1793661894.571 request_id=6285ab92c370c7f763fb8fa07e737e39 method=GET uri=/ status=200 upstream=172.20.0.3:8080 node=rust-a upstream_status=200 req_time=0.001 upstream_time=0.000
+
+━━━ PASSO 3 — Falha de um nó (90 s) ━━━
+PREVISÃO: Serviço continua 200 via B; 1-3 req ~1 s; watchdog DOWN em ~15 s; NoDown em ~20-25 s.
+$ docker compose stop rust-a
+ Container sentinel-rust-a-1 Stopping 
+ Container sentinel-rust-a-1 Stopped 
+$ scripts/teste_sintetico.sh 10 | tail -6
+--- contagem por status ---
+     10 status=200
+--- 3 mais lentas ---
+23:24:57.934 #03 status=200 tempo=1.093512s no=rust-b request_id=702fd389c01089be1950be283fa18831
+23:24:56.919 #02 status=200 tempo=1.093426s no=rust-b request_id=0b7d3ffcb58254b0602f93f825d687c6
+23:24:58.960 #05 status=200 tempo=1.093011s no=rust-b request_id=1330e37d9113a6465d676b93a3fd32ee
+$ docker compose logs --no-log-prefix --since 30s nginx | grep -E 'upstream=[0-9.:]+, ' | tail -3
+2026-11-02T23:24:56+00:00 nginx INFO msec=1793661896.907 request_id=0b7d3ffcb58254b0602f93f825d687c6 method=GET uri=/ status=200 upstream=172.20.0.3:8080, 172.20.0.2:8080 node=rust-b upstream_status=504, 200 req_time=1.001 upstream_time=1.000, 0.001
+2026-11-02T23:24:57+00:00 nginx INFO msec=1793661897.924 request_id=702fd389c01089be1950be283fa18831 method=GET uri=/ status=200 upstream=172.20.0.3:8080, 172.20.0.2:8080 node=rust-b upstream_status=504, 200 req_time=1.001 upstream_time=1.001, 0.001
+2026-11-02T23:24:58+00:00 nginx INFO msec=1793661898.951 request_id=1330e37d9113a6465d676b93a3fd32ee method=GET uri=/ status=200 upstream=172.20.0.3:8080, 172.20.0.2:8080 node=rust-b upstream_status=504, 200 req_time=1.002 upstream_time=1.000, 0.001
+(aguardando 20 s pelo watchdog…)
+$ docker compose logs --no-log-prefix --since 30s watchdog | grep -E 'rust-a.*(falha|DOWN)' | tail -4
+2026-11-02T23:25:13.838Z watchdog WARN alvo=rust-a tipo=readiness resultado=falha status=0 erro=prazo_total_2s_excedido(dns/conexao/leitura) falhas_consecutivas=4/3 latencia_ms=2002
+2026-11-02T23:25:13.838Z watchdog INFO ciclo resumo rust-a=DOWN rust-b=UP sintetico-nginx=UP
+2026-11-02T23:25:21.568Z watchdog WARN alvo=rust-a tipo=readiness resultado=falha status=0 erro=prazo_total_2s_excedido(dns/conexao/leitura) falhas_consecutivas=5/3 latencia_ms=2001
+2026-11-02T23:25:21.568Z watchdog INFO ciclo resumo rust-a=DOWN rust-b=UP sintetico-nginx=UP
+$ python3 scripts/promq.py alerts
+  ColetaFalhando           estado=firing   alvo=rust-a:8080      sev=media   desde=2026-11-02T23:24:59.443
+  NoDown                   estado=pending  alvo=rust-a           sev=alta    desde=2026-11-02T23:25:14.154
+
+━━━ PASSO 4 — Vivo, mas não pronto (60 s) ━━━
+PREVISÃO: rust-b: live 200 e ready 503; usuário segue 200 (via A, que voltou).
+$ docker compose start rust-a; sleep 12
+ Container sentinel-rust-a-1 Starting 
+ Container sentinel-rust-a-1 Started 
+$ scripts/admin.sh ready rust-b 0 | tail -1
+rust-b ready=0
+$ scripts/admin.sh live rust-b | head -1; scripts/admin.sh check rust-b | head -1
+HTTP/1.1 200 OK
+HTTP/1.1 503 Service Unavailable
+$ scripts/teste_sintetico.sh 6 | tail -5
+      6 status=503
+--- 3 mais lentas ---
+23:25:34.811 #01 status=503 tempo=0.000975s no=nenhum request_id=92daca35eb02b6350f4bb10409c93d9f
+23:25:34.845 #04 status=503 tempo=0.000892s no=nenhum request_id=7dfe3f1dd509046d55a0d0e9290f870b
+23:25:34.823 #02 status=503 tempo=0.000885s no=nenhum request_id=b1d28d7c3839f635229020bdbcecf6b9
+$ scripts/admin.sh ready rust-b 1 | tail -1
+rust-b ready=1
+
+━━━ PASSO 5 — Recuperação (45 s) ━━━
+PREVISÃO: A e B de volta ao revezamento; RestartCount 0; alertas resolvidos.
+(aguardando 12 s pela re-resolução do Nginx…)
+$ scripts/teste_sintetico.sh 10 | grep -A3 'por no'
+--- contagem por no ---
+      5 no=rust-a
+      5 no=rust-b
+--- contagem por status ---
+$ for s in rust-a rust-b; do echo $s RestartCount=$(docker inspect -f '{{.RestartCount}}' sentinel-$s-1); done
+rust-a RestartCount=0
+rust-b RestartCount=0
+$ python3 scripts/promq.py alerts
+  WatchdogFlapping         estado=firing   alvo=rust-a           sev=media   desde=2026-11-02T23:25:29.443
+
+━━━ PASSO 6 — Falha do monitor (30 s) ━━━
+PREVISÃO: Usuário não percebe; MonitorParado dispara após 30 s sem sondagem. Quem vigia o vigia: o Prometheus.
+$ docker compose stop watchdog
+ Container sentinel-watchdog-1 Stopping 
+ Container sentinel-watchdog-1 Stopped 
+$ scripts/teste_sintetico.sh 3 | tail -4
+--- 3 mais lentas ---
+23:25:48.429 #01 status=200 tempo=0.001075s no=rust-b request_id=b2fe685d3647d98d6ba263b85d18dca0
+23:25:48.454 #03 status=200 tempo=0.000921s no=rust-b request_id=bdf10fa42fd53733f2e177e837ba535d
+23:25:48.442 #02 status=200 tempo=0.000899s no=rust-a request_id=84da71a35799939aade13b4b7c8df6b4
+(aguardando 35 s…)
+$ python3 scripts/promq.py query 'time() - max(max_over_time(watchdog_last_probe_timestamp_seconds[10m]))'
+  {} => 44.361000061035156
+$ python3 scripts/promq.py alerts
+  MonitorParado            estado=firing   alvo=-                sev=media   desde=2026-11-02T23:26:19.154
+  ColetaFalhando           estado=firing   alvo=watchdog:9100    sev=media   desde=2026-11-02T23:25:54.443
+  WatchdogFlapping         estado=firing   alvo=rust-a           sev=media   desde=2026-11-02T23:25:29.443
+$ docker compose start watchdog
+ Container sentinel-watchdog-1 Starting 
+ Container sentinel-watchdog-1 Started 
+
+Fim da demonstração.

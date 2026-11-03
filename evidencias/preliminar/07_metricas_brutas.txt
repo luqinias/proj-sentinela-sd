@@ -1,0 +1,83 @@
+
+=== [2026-11-02T23:24:34.032Z] HORA 5 — /metrics de um nó Rust (coletado de dentro da rede) ===
+# HELP app_requests_total Requisicoes atendidas pelo no, por rota e status HTTP.
+# TYPE app_requests_total counter
+app_requests_total{node="rust-b",route="/",status="200"} 82
+app_requests_total{node="rust-b",route="/health/live",status="200"} 24
+app_requests_total{node="rust-b",route="/health/ready",status="200"} 25
+app_requests_total{node="rust-b",route="/metrics",status="200"} 23
+# HELP app_request_duration_seconds Latencia da rota de usuario / (inclui atraso artificial).
+# TYPE app_request_duration_seconds histogram
+app_request_duration_seconds_bucket{node="rust-b",le="0.005"} 82
+app_request_duration_seconds_bucket{node="rust-b",le="0.01"} 82
+app_request_duration_seconds_bucket{node="rust-b",le="0.025"} 82
+app_request_duration_seconds_bucket{node="rust-b",le="0.05"} 82
+app_request_duration_seconds_bucket{node="rust-b",le="0.1"} 82
+app_request_duration_seconds_bucket{node="rust-b",le="0.25"} 82
+app_request_duration_seconds_bucket{node="rust-b",le="0.5"} 82
+app_request_duration_seconds_bucket{node="rust-b",le="1"} 82
+app_request_duration_seconds_bucket{node="rust-b",le="2.5"} 82
+app_request_duration_seconds_bucket{node="rust-b",le="5"} 82
+app_request_duration_seconds_bucket{node="rust-b",le="+Inf"} 82
+app_request_duration_seconds_sum{node="rust-b"} 0.000702
+app_request_duration_seconds_count{node="rust-b"} 82
+# HELP app_inflight_requests Requisicoes em andamento (saturacao).
+# TYPE app_inflight_requests gauge
+app_inflight_requests{node="rust-b"} 0
+# HELP app_ready Estado de prontidao declarado pelo no (1 pronto, 0 nao pronto).
+# TYPE app_ready gauge
+app_ready{node="rust-b"} 1
+# HELP app_artificial_delay_ms Atraso artificial configurado via /admin/atraso.
+# TYPE app_artificial_delay_ms gauge
+app_artificial_delay_ms{node="rust-b"} 0
+# HELP app_start_time_seconds Instante (unix) em que o processo iniciou; muda a cada reinicio.
+# TYPE app_start_time_seconds gauge
+app_start_time_seconds{node="rust-b"} 1793661741.642
+# HELP app_uptime_seconds Tempo de vida do processo.
+# TYPE app_uptime_seconds gauge
+app_uptime_seconds{node="rust-b"} 121.604
+
+=== [2026-11-02T23:24:34.162Z] HORA 5 — /metrics do watchdog ===
+# HELP watchdog_target_up 1 se o alvo esta UP na visao do watchdog, 0 se DOWN.
+# TYPE watchdog_target_up gauge
+watchdog_target_up{target="rust-a",kind="readiness"} 1
+watchdog_target_up{target="rust-b",kind="readiness"} 1
+watchdog_target_up{target="sintetico-nginx",kind="sintetico"} 1
+# HELP watchdog_target_down 1 se o alvo esta DOWN (3 falhas consecutivas).
+# TYPE watchdog_target_down gauge
+watchdog_target_down{target="rust-a",kind="readiness"} 0
+watchdog_target_down{target="rust-b",kind="readiness"} 0
+watchdog_target_down{target="sintetico-nginx",kind="sintetico"} 0
+# HELP watchdog_consecutive_failures Falhas consecutivas atuais.
+# TYPE watchdog_consecutive_failures gauge
+watchdog_consecutive_failures{target="rust-a",kind="readiness"} 0
+watchdog_consecutive_failures{target="rust-b",kind="readiness"} 0
+watchdog_consecutive_failures{target="sintetico-nginx",kind="sintetico"} 0
+# HELP watchdog_probe_duration_seconds Latencia da ultima sondagem.
+# TYPE watchdog_probe_duration_seconds gauge
+watchdog_probe_duration_seconds{target="rust-a",kind="readiness"} 0.0019
+watchdog_probe_duration_seconds{target="rust-b",kind="readiness"} 0.0121
+watchdog_probe_duration_seconds{target="sintetico-nginx",kind="sintetico"} 0.0222
+# HELP watchdog_probe_http_status Ultimo status HTTP (0 = sem resposta/timeout).
+# TYPE watchdog_probe_http_status gauge
+watchdog_probe_http_status{target="rust-a",kind="readiness"} 200
+watchdog_probe_http_status{target="rust-b",kind="readiness"} 200
+watchdog_probe_http_status{target="sintetico-nginx",kind="sintetico"} 200
+# HELP watchdog_last_probe_timestamp_seconds Instante unix da ultima sondagem concluida.
+# TYPE watchdog_last_probe_timestamp_seconds gauge
+watchdog_last_probe_timestamp_seconds{target="rust-a",kind="readiness"} 1793661874.112
+watchdog_last_probe_timestamp_seconds{target="rust-b",kind="readiness"} 1793661874.123
+watchdog_last_probe_timestamp_seconds{target="sintetico-nginx",kind="sintetico"} 1793661874.134
+# HELP watchdog_probes_total Sondagens por resultado.
+# TYPE watchdog_probes_total counter
+watchdog_probes_total{target="rust-a",kind="readiness",result="ok"} 15
+watchdog_probes_total{target="rust-a",kind="readiness",result="falha"} 10
+watchdog_probes_total{target="rust-b",kind="readiness",result="ok"} 25
+watchdog_probes_total{target="rust-b",kind="readiness",result="falha"} 0
+watchdog_probes_total{target="sintetico-nginx",kind="sintetico",result="ok"} 25
+watchdog_probes_total{target="sintetico-nginx",kind="sintetico",result="falha"} 0
+# HELP watchdog_state_transitions_total Transicoes UP<->DOWN (detecta flapping).
+# TYPE watchdog_state_transitions_total counter
+watchdog_state_transitions_total{target="rust-a",kind="readiness"} 4
+watchdog_state_transitions_total{target="rust-b",kind="readiness"} 0
+watchdog_state_transitions_total{target="sintetico-nginx",kind="sintetico"} 0

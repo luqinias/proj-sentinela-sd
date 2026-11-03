@@ -1,0 +1,40 @@
+
+=== [2026-11-02T23:24:34.287Z] HORA 5 — Prometheus: alvos de coleta ===
+  prometheus http://localhost:9090/metrics       health=up    ultima_coleta=2026-11-02T23:24:32.204
+  rust       http://rust-a:8080/metrics          health=up    ultima_coleta=2026-11-02T23:24:31.238
+  rust       http://rust-b:8080/metrics          health=up    ultima_coleta=2026-11-02T23:24:31.994
+  watchdog   http://watchdog:9100/metrics        health=up    ultima_coleta=2026-11-02T23:24:30.633
+
+=== [2026-11-02T23:24:34.341Z] Regras de alerta carregadas ===
+  [sentinel-complementares] TesteSinteticoFalhando sev=critica estado=inactive for=5s
+  [sentinel-complementares] LatenciaP95Alta        sev=media   estado=inactive for=60s
+  [sentinel-complementares] ColetaFalhando         sev=media   estado=inactive for=15s
+  [sentinel-complementares] ReinicioEmLoop         sev=alta    estado=inactive for=0s
+  [sentinel-complementares] WatchdogFlapping       sev=media   estado=inactive for=0s
+  [sentinel-obrigatorios] NoDown                 sev=alta    estado=inactive for=5s
+  [sentinel-obrigatorios] TaxaErro5xxAlta        sev=alta    estado=inactive for=30s
+  [sentinel-obrigatorios] MonitorParado          sev=media   estado=inactive for=0s
+
+=== [2026-11-02T23:24:34.385Z] As 5 métricas do plano (valores atuais) ===
+M1 disponibilidade por nó (watchdog_target_up):
+  {__name__="watchdog_target_up",instance="watchdog:9100",job="watchdog",kind="readiness",target="rust-a"} => 1
+  {__name__="watchdog_target_up",instance="watchdog:9100",job="watchdog",kind="readiness",target="rust-b"} => 1
+  {__name__="watchdog_target_up",instance="watchdog:9100",job="watchdog",kind="sintetico",target="sintetico-nginx"} => 1
+M2 taxa de erro 5xx de usuário (2m) — fórmula do alerta (sem 503 de readiness):
+  (vazio)
+M2' mesma taxa CONTANDO os 503 de readiness (fórmula antiga, achado 5):
+  {} => 0.011894609889612122
+M3 latência p95 da rota / (2m), por nó:
+  {node="rust-a"} => 0.00475
+  {node="rust-b"} => 0.00475
+M4 saturação (requisições em andamento):
+  {__name__="app_inflight_requests",instance="rust-a:8080",job="rust",node="rust-a"} => 0
+  {__name__="app_inflight_requests",instance="rust-b:8080",job="rust",node="rust-b"} => 0
+M5 idade da última sondagem do watchdog (s):
+  {} => 5.517999887466431
+Extra: tráfego por nó (req/s, 1m):
+  {node="rust-a"} => 0.25763551501818066
+  {node="rust-b"} => 0.3606332720256771
+
+=== [2026-11-02T23:24:34.705Z] Alertas atuais ===
+  (nenhum alerta pendente/disparado)

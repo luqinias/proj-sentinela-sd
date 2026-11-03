@@ -1,0 +1,12 @@
+
+=== [2026-11-02T23:24:34.751Z] Exposição de portas no host (nenhuma porta administrativa exposta à rede) ===
+$ sh -c ss -ltn | grep -E ':(8080|9090|9100) ' || true
+LISTEN 0      4096        127.0.0.1:9090       0.0.0.0:*          
+LISTEN 0      4096                *:8080             *:*          
+
+Esperado: 0.0.0.0:8080 (nginx) e 127.0.0.1:9090 (prometheus). 9100 e 8080 dos nós NÃO aparecem.
+
+=== [2026-11-02T23:24:34.764Z] Tentativas a partir do host ===
+http://localhost:8080/metrics                 -> 404
+http://localhost:8080/admin/atraso?ms=9999    -> 404
+http://localhost:9100/metrics                 -> sem conexão (porta não publicada)

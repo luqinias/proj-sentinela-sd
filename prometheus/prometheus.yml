@@ -1,0 +1,24 @@
+# Operação Sentinel — coleta de métricas (Prometheus v2.53.0)
+global:
+  scrape_interval: 5s        # igual ao intervalo do watchdog
+  scrape_timeout: 2s
+  evaluation_interval: 5s    # regras avaliadas a cada 5 s (alertas com "for" curtos)
+
+rule_files:
+  - /etc/prometheus/alertas.yml
+
+scrape_configs:
+  # Nós da aplicação: coleta direta na rede interna (o Nginx bloqueia /metrics).
+  - job_name: rust
+    static_configs:
+      - targets: ["rust-a:8080", "rust-b:8080"]
+
+  # Watchdog: visão "de fora" dos nós + teste sintético + frescor do próprio monitor.
+  - job_name: watchdog
+    static_configs:
+      - targets: ["watchdog:9100"]
+
+  # O próprio Prometheus (quem vigia o vigia, parcialmente).
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

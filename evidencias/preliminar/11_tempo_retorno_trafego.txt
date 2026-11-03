@@ -1,0 +1,52 @@
+=== [2026-11-02T23:15:55Z] Tempo de retorno do tráfego após docker compose start (rodada 1) ===
+[23:15:55] stop rust-a e espera 25s parado
+[23:16:23] start rust-a (t=0)
+  t=  0.5s atendido_por=rust-b
+  t=  1.1s atendido_por=rust-b
+  t=  1.6s atendido_por=rust-b
+  t=2.2s watchdog ja registrou rust-a UP
+  t=  2.2s atendido_por=rust-b
+  t=  2.8s atendido_por=rust-b
+  t=  3.4s atendido_por=rust-b
+  t=  4.0s atendido_por=rust-b
+  t=  4.6s atendido_por=rust-b
+  t=  5.2s atendido_por=rust-b
+  t=  5.8s atendido_por=rust-b
+  t=  6.4s atendido_por=rust-b
+  t=  7.0s atendido_por=rust-b
+  t=  7.6s atendido_por=rust-b
+  t=  8.2s atendido_por=rust-b
+  t=  8.8s atendido_por=rust-b
+  t=  9.4s atendido_por=rust-b
+  t= 10.0s atendido_por=rust-b
+  t= 10.5s atendido_por=rust-a
+RESULTADO: watchdog UP em ~2.2s; primeira requisicao de usuario em rust-a em 10.5s apos o start
+--- error_log do nginx no periodo:
+2026/11/02 23:15:58 [error] 30#30: *263 upstream timed out (110: Operation timed out) while connecting to upstream, client: 127.0.0.1, server: , request: "GET /health/live HTTP/1.1", upstream: "http://172.20.0.2:8080/health/live", host: "127.0.0.1"
+2026/11/02 23:16:05 [error] 30#30: rust-a could not be resolved (3: Host not found)
+2026/11/02 23:16:22 [error] 30#30: rust-a could not be resolved (3: Host not found)
+=== [2026-11-02T23:19:25Z] Tempo de retorno do tráfego (rodada 2, após correções) ===
+[23:19:25] stop rust-a e espera 25s parado
+[23:19:50] start rust-a (t=0)
+  t=  0.5s atendido_por=rust-b
+  t=  1.1s atendido_por=rust-b
+  t=  1.7s atendido_por=rust-b
+  t=  2.3s atendido_por=rust-b
+  t=  2.9s atendido_por=rust-b
+  t=3.5s watchdog ja registrou rust-a UP
+  t=  3.5s atendido_por=rust-b
+  t=  4.1s atendido_por=rust-b
+  t=  4.6s atendido_por=rust-b
+  t=  5.2s atendido_por=rust-b
+  t=  5.8s atendido_por=rust-b
+  t=  6.4s atendido_por=rust-b
+  t=  7.0s atendido_por=rust-b
+  t=  7.6s atendido_por=rust-b
+  t=  8.2s atendido_por=rust-b
+  t=  8.8s atendido_por=rust-b
+  t=  9.4s atendido_por=rust-a
+RESULTADO: watchdog UP em ~3.5s; primeira requisicao de usuario em rust-a em 9.4s apos o start
+--- error_log do nginx no periodo:
+2026/11/02 23:19:33 [error] 30#30: rust-a could not be resolved (3: Host not found)
+2026/11/02 23:19:34 [error] 30#30: *234 upstream timed out (110: Operation timed out) while connecting to upstream, client: 172.20.0.6, server: , request: "GET / HTTP/1.1", upstream: "http://172.20.0.3:8080/", host: "nginx:80"
+2026/11/02 23:19:47 [error] 30#30: rust-a could not be resolved (3: Host not found)
