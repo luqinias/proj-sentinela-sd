@@ -296,24 +296,24 @@ function tx(slide, text, o) { slide.addText(text, Object.assign({ isTextBox: tru
   s = pres.addSlide({ masterName: "CONTEUDO", sectionTitle: "Riscos e plano" });
   s.addText("5. Riscos, dificuldades e plano até 12/11", { placeholder: "title" });
 
-  tx(s, "Encontrado nos testes (antes/depois guardados)", { x: 0.6, y: 1.4, w: 6.2, h: 0.4, fontSize: 18, bold: true, color: C.text2, fontFace: "Cambria" });
+  tx(s, "O que os testes nos ensinaram", { x: 0.6, y: 1.4, w: 6.2, h: 0.4, fontSize: 18, bold: true, color: C.text2, fontFace: "Cambria" });
   const fixes = [
-    "Sonda passava do timeout por DNS (3,6 s > 2 s)",
-    "Alerta de erro contava 503 que o usuário não viu",
-    "Flapping falso por extrapolação de increase()",
-    "Healthcheck do Nginx dependia dos nós",
+    "Um prazo precisa cobrir todas as etapas da operação",
+    "O que o nó registra não é o que o usuário vê",
+    "Alertas também erram: falsos positivos se testam",
+    "Autoverificação não pode depender de terceiros",
   ];
   for (let i = 0; i < fixes.length; i++) {
     const y = 1.9 + i * 0.5;
     await badgeIcon(s, fa.FaCheck, 0.6, y + 0.04, 0.38, C.accent2, "fix-" + i);
     tx(s, fixes[i], { x: 1.15, y, w: 5.7, h: 0.46, fontSize: 14, valign: "middle" });
   }
-  tx(s, "Riscos", { x: 0.6, y: 4.05, w: 6.2, h: 0.4, fontSize: 18, bold: true, color: C.text2, fontFace: "Cambria" });
+  tx(s, "Riscos que permanecem", { x: 0.6, y: 4.05, w: 6.2, h: 0.4, fontSize: 18, bold: true, color: C.text2, fontFace: "Cambria" });
   const risks = [
-    "SLI de erro medido no nó, não na borda (Nginx)",
-    "Prometheus sem vigia; tudo num só host",
-    "Relógio do WSL2 salta −2,4 s / +5,1 s",
-    "Build do Rust na máquina da aula (plano B: imagens salvas)",
+    "Erro medido dentro do nó, não na entrada do sistema",
+    "O sistema de alertas não é vigiado por ninguém",
+    "Uma só máquina: as falhas não são independentes",
+    "Relógios imprecisos dificultam ordenar eventos",
   ];
   for (let i = 0; i < risks.length; i++) {
     const y = 4.55 + i * 0.5;
@@ -324,11 +324,11 @@ function tx(slide, text, o) { slide.addText(text, Object.assign({ isTextBox: tru
   card(s, 7.2, 1.4, 5.53, 5.25, "plano");
   tx(s, "Plano", { x: 7.45, y: 1.55, w: 5, h: 0.4, fontSize: 18, bold: true, color: C.text2, fontFace: "Cambria" });
   const plan = [
-    ["06–08/11", "Hora 6: E2, E2b, E3, E4 e E6, com previsão e evidência"],
-    ["Em aula", "Hora 7: incidente surpresa (checklist pronto)"],
-    ["09–10/11", "Relatório F, README final, SLI de erro na borda"],
-    ["11/11", "Ensaio cronometrado da demo + vídeo plano B"],
-    ["12/11", "Entrega A–G e demonstração ao vivo"],
+    ["06–08/11", "Experimentos: nó lento, monitor parado e erro da aplicação"],
+    ["Em aula", "Incidente surpresa: separar fatos de inferências antes de agir"],
+    ["09–10/11", "Relatório do incidente e melhoria priorizada: medir o erro na borda"],
+    ["11/11", "Ensaio da demonstração e plano B"],
+    ["12/11", "Entrega final e demonstração ao vivo"],
   ];
   s.addShape(pres.ShapeType.line, { x: 7.67, y: 2.3, w: 0, h: 3.7, line: { color: HEX.accent6, width: 2 }, objectName: "linha-tempo" });
   plan.forEach(([d, t], i) => {
@@ -339,10 +339,10 @@ function tx(slide, text, o) { slide.addText(text, Object.assign({ isTextBox: tru
   });
   s.addNotes(
     "Todos, ~45 s, uma frase cada.\n" +
-    "1. Achamos problemas nos nossos testes (timeout que não cobria DNS, dois alertas com falso positivo, healthcheck dependente e relógio que salta) e guardamos o antes e o depois.\n" +
-    "2. O maior risco técnico é medir a taxa de erro no nó: o que o usuário vê só o Nginx sabe.\n" +
-    "3. Plano: experimentos da Hora 6 até 08/11, relatório e README até 10/11.\n" +
-    "4. Ensaio cronometrado e vídeo de plano B em 11/11; entrega em 12/11.\nDetalhe: docs/achados.md");
+    "1. Os testes nos ensinaram que prazos, métricas, alertas e verificações de saúde também falham, e guardamos o antes e o depois de cada correção.\n" +
+    "2. O maior risco que permanece é medir o erro dentro do nó: o que o usuário realmente vê só a entrada do sistema sabe.\n" +
+    "3. Até 12/11: experimentos, incidente surpresa, relatório com uma melhoria priorizada e o ensaio da demonstração.\n" +
+    "Detalhe: docs/achados.md");
 
   await pres.writeFile({ fileName: OUT });
   await applyTheme(OUT, THEME);
