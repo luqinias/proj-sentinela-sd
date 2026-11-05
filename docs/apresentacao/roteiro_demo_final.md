@@ -9,7 +9,7 @@ Comandos prontos em `scripts/demo_final.sh` (pausa antes de cada passo para a pr
 | 2 | Fluxo normal | "Vai alternar A, B, A, B e o id aparece nos dois logs." | 6 req; `grep $rid` no Nginx e no Rust | 45 s | |
 | 3 | Falha de um nó | "Serviço continua; 1 a 3 req de ~1 s; DOWN em ~15 s." | `stop rust-a`; 10 req; log Nginx `504, 200`; watchdog DOWN; `/alerts` | 90 s | |
 | 4 | Vivo, mas não pronto | "live 200, ready 503, usuário não vê erro." | `admin.sh ready rust-b 0`; live/check; 6 req | 60 s | |
-| 5 | Recuperação | "A volta ao revezamento ~10 s após o start (DNS do Nginx), sem reinício em loop." | 10 req balanceadas; `RestartCount`; alertas vazios | 45 s | |
+| 5 | Recuperação | "A volta ao revezamento em até ~10 s após o start (DNS do Nginx), sem reinício em loop." | 10 req balanceadas; `RestartCount`; alertas vazios | 45 s | |
 | 6 | Falha do monitor | "Usuário não percebe; MonitorParado em ~35 s. O Prometheus vigia o vigia; o Prometheus é o SPOF residual." | `stop watchdog`; idade da última sondagem; `/alerts` | 30 s | |
 
 **Observado no ensaio de 02/11** (`evidencias/ensaio_demo/`): todos os passos rodaram; previsões

@@ -57,7 +57,7 @@ watchdog    Up (healthy)  9100/tcp
 | Log do Nginx | `upstream_status=503, 200` → recusou em A, refeito em B |
 | `/metrics`, `/admin` pela porta 8080 | 404 |
 
-<span class="small">Evidências: `evidencias/preliminar/01…04` · Nginx comentado: `nginx/nginx.conf`</span>
+<span class="small">Evidências: `evidencias/preliminar/01…03`, 10/10 em `05` (após recuperação) e `05b` · Nginx comentado: `nginx/nginx.conf`</span>
 
 ---
 
@@ -88,7 +88,7 @@ watchdog    Up (healthy)  9100/tcp
 # 4. Hipóteses e experimentos (início de E)
 
 **H1 — Parar A** → serviço continua; 1–3 requisições ~1 s (connect timeout) — <span class="ok">CONFIRMADA</span>
-`20/20 → 200 via B` · `3 req a 1,09 s` · watchdog DOWN em **14 s** · `NoDown` em **~23 s** · alertas resolvidos após `start` · `RestartCount=0`
+`20/20 → 200 via B` · `3 req a 1,09 s` (05c) · watchdog DOWN em **14 s** · `NoDown` ativo em **22 s** (05) · alertas resolvidos após `start` · `RestartCount=0`
 
 **H2 — A lento (2,5 s)** → watchdog diz DOWN (timeout 2 s) mas Nginx ainda usa A (read 3 s): **os dois vão discordar** — ⏳ Hora 6
 
@@ -97,7 +97,7 @@ watchdog    Up (healthy)  9100/tcp
 | Previstos | E2b atraso 3,5 s (retry amplifica carga) · E4 `/erro` 500 **sem** retry · E6 tempo de retorno × `resolver valid` |
 |---|---|
 
-**Achado:** após `start rust-a`, watchdog vê UP em **2 s**, mas o tráfego só volta em **10,5 s** (re-resolução DNS do Nginx). Monitor e balanceador **discordam** por ~8 s.
+**Achado:** após `start rust-a`, watchdog vê UP em **2–3 s**, mas o tráfego leva **até ~10 s** para voltar (medido: ≤ 4,6 s, 9,4 s, 10,5 s; depende da fase da re-resolução DNS do Nginx). Monitor e balanceador **discordam** por até ~8 s.
 
 ---
 

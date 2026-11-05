@@ -168,7 +168,7 @@ function tx(slide, text, o) { slide.addText(text, Object.assign({ isTextBox: tru
     { x: 0.85, y: 5.7, w: 6.5, h: 0.8, fontSize: 14 });
 
   const stats = [
-    ["10 / 10", "20 requisições: A / B, todas 200", C.accent1],
+    ["10 / 10", "20 requisições (ev. 05): A / B, todas 200", C.accent1],
     ["200 · 503", "rust-a não pronto: live / ready", C.accent1],
     ["10 de 10", "respostas 200 ao usuário com A fora", C.accent2],
     ["404", "/metrics e /admin pela porta 8080", C.accent1],
@@ -182,9 +182,9 @@ function tx(slide, text, o) { slide.addText(text, Object.assign({ isTextBox: tru
   s.addNotes(
     "Integrante 2 (Aplicação), ~75 s.\n" +
     "Saída real do docker compose ps de 02/11: cinco serviços saudáveis e só duas portas no host, a 8080 do Nginx e a 9090 do Prometheus presa em 127.0.0.1. " +
-    "Vinte requisições: dez para cada nó. Cada requisição recebe um request_id do Nginx, que aparece também no log do Rust: é assim que correlacionamos. " +
+    "Vinte requisições depois da recuperação: dez para cada nó. Cada requisição recebe um request_id do Nginx, que aparece também no log do Rust: é assim que correlacionamos. " +
     "Liveness e readiness são diferentes: quando desligamos a prontidão do A, o live continua 200, o ready vira 503, e o usuário continua recebendo 200. " +
-    "O log do Nginx mostra 503, 200: tentou o A, foi recusado, refez no B. Nada foi reiniciado.\nEvidências: evidencias/preliminar/01 a 04.");
+    "O log do Nginx mostra 503, 200: tentou o A, foi recusado, refez no B. Nada foi reiniciado.\nEvidências: evidencias/preliminar/01 a 03; o 10/10 está no 05 (após a recuperação) e no 05b, não no 04 (achado 8).");
 
   // ============================================================ SLIDE 3
   pres.addSection({ title: "Métricas e alertas" });
@@ -248,7 +248,7 @@ function tx(slide, text, o) { slide.addText(text, Object.assign({ isTextBox: tru
   pill(s, "CONFIRMADA", 5.2, 1.62, 1.5, C.accent2, "h1-status", 0.36);
   tx(s, "O serviço continua via B; 1 a 3 requisições levam ~1 s porque o Nginx espera o connect timeout antes de refazer.",
     { x: 0.85, y: 2.1, w: 5.85, h: 0.75, fontSize: 14 });
-  [["20/20", "respostas 200"], ["1,09 s", "3 req. lentas"], ["14 s", "watchdog DOWN"], ["23 s", "alerta NoDown"]].forEach(([n, l], i) => {
+  [["20/20", "respostas 200"], ["1,09 s", "3 req. lentas"], ["14 s", "watchdog DOWN"], ["22 s", "NoDown ativo"]].forEach(([n, l], i) => {
     const x = 0.85 + i * 1.47;
     tx(s, n, { x, y: 3.0, w: 1.4, h: 0.6, fontSize: 26, bold: true, color: C.accent2, fontFace: "Cambria" });
     tx(s, l, { x, y: 3.6, w: 1.4, h: 0.5, fontSize: 13, color: C.accent5 });
@@ -269,8 +269,8 @@ function tx(slide, text, o) { slide.addText(text, Object.assign({ isTextBox: tru
   card(s, 7.2, 1.45, 5.53, 5.2, "achado");
   tx(s, "Achado: o nó volta antes do tráfego", { x: 7.45, y: 1.6, w: 5.1, h: 0.4, fontSize: 18, bold: true, color: C.text2, fontFace: "Cambria" });
   s.addChart(pres.ChartType.bar, [
-    { name: "Watchdog vê UP", labels: ["Rodada 1", "Rodada 2"], values: [2.2, 3.5] },
-    { name: "Tráfego volta ao nó", labels: ["Rodada 1", "Rodada 2"], values: [10.5, 9.4] },
+    { name: "Watchdog vê UP", labels: ["Rodada 1", "Rodada 2", "Rodada 3"], values: [2.2, 3.5, 2.8] },
+    { name: "Tráfego volta ao nó", labels: ["Rodada 1", "Rodada 2", "Rodada 3"], values: [10.5, 9.4, 4.6] },
   ], {
     x: 7.4, y: 2.05, w: 5.15, h: 3.0, barDir: "bar", catAxisOrientation: "maxMin", objectName: "grafico-retorno",
     chartColors: [HEX.accent1, HEX.accent3], showValue: true, dataLabelPosition: "outEnd", dataLabelFormatCode: '0.0" s"',
@@ -280,15 +280,15 @@ function tx(slide, text, o) { slide.addText(text, Object.assign({ isTextBox: tru
     valAxisHidden: true, valAxisMaxVal: 12.5, valGridLine: { style: "none" }, catGridLine: { style: "none" },
     showTitle: true, title: "Segundos após docker compose start rust-a", titleFontSize: 12, titleColor: HEX.accent5, titleFontFace: "+mn-lt",
   });
-  tx(s, "Monitor e balanceador discordam por ~8 s: o Nginx só re-resolve o DNS a cada 10 s. Próximo: E6 com valid=5s. Previstos também: E2b (retry amplifica carga) e E4 (500 sem retry).",
+  tx(s, "Monitor e balanceador discordam por até ~8 s: o Nginx re-resolve o DNS num ciclo de 10 s (medido: 4,6 / 9,4 / 10,5 s). Próximo: E6 com valid=5s. Previstos também: E2b (retry amplifica carga) e E4 (500 sem retry).",
     { x: 7.45, y: 5.15, w: 5.1, h: 1.35, fontSize: 14 });
   s.addNotes(
     "Integrante 4 (Relator), ~60 s.\n" +
     "Hipótese 1: parar o A não derruba o serviço. Previmos de 1 a 3 requisições lentas de ~1 s, que é o connect timeout. " +
-    "Observado: 20 de 20 com 200, três a 1,09 s, watchdog DOWN em 14 s, alerta em 23 s, e depois do start tudo resolvido, sem reinício. " +
-    "Mas testar a recuperação mostrou algo que não prevíamos: o watchdog vê o A de volta em 2 a 3,5 s, e o Nginx só manda tráfego para ele depois de ~10 s, porque re-resolve o DNS a cada 10 s. " +
+    "Observado: 20 de 20 com 200, três a 1,09 s, watchdog DOWN em 14 s, alerta ativo em 22 s, e depois do start tudo resolvido, sem reinício. " +
+    "Mas testar a recuperação mostrou algo que não prevíamos: o watchdog vê o A de volta em 2 a 3,5 s, e o Nginx pode levar até ~10 s para mandar tráfego para ele, porque re-resolve o DNS num ciclo de 10 s (medimos 4,6, 9,4 e 10,5 s). " +
     "Monitor e balanceador discordam. Os próximos experimentos (nó lento, watchdog parado, erro 500) vão explorar essas discordâncias.\n" +
-    "Evidências: 05_no_parado_e_recuperacao.txt, 11_tempo_retorno_trafego.txt");
+    "Evidências: 1,09 s em 05c e no ensaio; 14 s e 22 s em 05; retorno em 05 e 11_tempo_retorno_trafego.txt");
 
   // ============================================================ SLIDE 5
   pres.addSection({ title: "Riscos e plano" });

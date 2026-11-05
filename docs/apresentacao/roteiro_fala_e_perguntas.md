@@ -11,7 +11,7 @@ Avaliação: clareza · coerência com o que foi construído · **honestidade so
 | 1 Arquitetura e SPOF | Integrante 1 (Infra) | 60 s | "Os nós Rust são redundantes; o Nginx, o watchdog, o Prometheus e o próprio host não são." |
 | 2 O que já roda | Integrante 2 (Aplicação) | 75 s | "Sobe com um comando, reparte 10/10, e um nó não pronto sai do tráfego sem reiniciar." |
 | 3 Métricas e alertas | Integrante 3 (Observabilidade) | 60 s | "Definimos o que é 'estar bom' antes dos alertas, e cada limiar tem um porquê." |
-| 4 Hipóteses e experimentos | Integrante 4 (Relator) | 60 s | "A primeira hipótese foi confirmada com números, e o teste revelou que monitor e balanceador discordam por ~8 s." |
+| 4 Hipóteses e experimentos | Integrante 4 (Relator) | 60 s | "A primeira hipótese foi confirmada com números, e o teste revelou que monitor e balanceador discordam por até ~8 s." |
 | 5 Riscos e plano | Todos (1 frase cada) | 45 s | "Achamos e corrigimos 5 problemas; o maior risco restante é medir o erro no nó e não na borda." |
 
 (Equipe menor: acumular — ex.: 1+2 e 3+4.)
@@ -44,10 +44,10 @@ regras. Sem Alertmanager: os alertas aparecem na página do Prometheus — limit
 
 **Slide 4 (60 s).** "Hipótese 1: parar o A não derruba o serviço. Previmos de 1 a 3
 requisições lentas de ~1 s, que é o connect timeout. Observado: 20 de 20 com 200, três a
-1,09 s, watchdog DOWN em 14 s, alerta em 23 s, e depois do `start` tudo resolvido, sem
+1,09 s, watchdog DOWN em 14 s, alerta ativo em 22 s, e depois do `start` tudo resolvido, sem
 reinício. Mas testar a recuperação mostrou algo que não prevíamos: o watchdog vê o A de volta
-em 2 s, e o Nginx só manda tráfego para ele depois de ~10 s — porque ele re-resolve o DNS a
-cada 10 s. Monitor e balanceador discordam. Os próximos experimentos — nó lento, watchdog
+em 2 a 3 s, e o Nginx pode levar até ~10 s para mandar tráfego para ele — porque ele re-resolve
+o DNS num ciclo de 10 s; medimos 4,6, 9,4 e 10,5 s. Monitor e balanceador discordam. Os próximos experimentos — nó lento, watchdog
 parado, erro 500 — vão justamente explorar essas discordâncias."
 
 **Slide 5 (45 s, uma frase por pessoa).**
@@ -74,8 +74,9 @@ parado, erro 500 — vão justamente explorar essas discordâncias."
 | **Retry não amplifica carga?** | Sim, por isso: só 2 tentativas, só em erro de conexão/timeout/502/503, nunca em 500, teto de 4 s. E só GET (idempotente). O experimento E2b vai medir isso. |
 | **Por que 1 s de connect timeout?** | Na rede local conectar leva < 1 ms; 1 s é folga enorme e limita o custo de um nó parado a ~1 s (medido: 1,09 s). |
 | **Por que 2% de erro?** | Abaixo, com este volume, é ruído (1 em 50); acima, o usuário percebe. Janela de 2 min suaviza picos. |
-| **Por que o tráfego demora a voltar?** | `resolve` + `resolver valid=10s`: o contêiner parado some do DNS e o Nginx tira o servidor; ele só volta na próxima re-resolução. Medido: 10,5 s e 9,4 s. Vamos testar `valid=5s` (E6). |
+| **Por que o tráfego demora a voltar?** | `resolve` + `resolver valid=10s`: o contêiner parado some do DNS e o Nginx tira o servidor; ele só volta na próxima re-resolução. Como o ciclo não está sincronizado com o `start`, o atraso vai de 0 a ~10 s: medimos ≤ 4,6 s, 9,4 s e 10,5 s. Vamos testar `valid=5s` (E6). |
 | **Por que usar `resolve`?** | Sem ele, o Nginx resolve só na inicialização: se um nó estiver fora na hora, o Nginx **não sobe** (evidência 06: `host not found in upstream`), e se o nó voltar com outro IP, nunca é encontrado. |
+| **Por que, no arquivo 04, as 20 requisições foram para o B?** | Achado 8: o teste anterior deixou o A não pronto, e a sonda sintética recebeu 503 e renovou o `fail_timeout=10s`. Quando medimos, o A já estava pronto, mas ainda fora do pool. O 10/10 está no `05`, depois da recuperação. Corrigimos o script e mantivemos o arquivo original como evidência. |
 | **O que o falso positivo de erro ensinou?** | Que métrica do nó mede tentativas, não o que o usuário recebeu. 503 refeito em B virou "erro" mas o usuário viu 200. Corrigimos o numerador; o certo é medir na borda — melhoria priorizada. |
 | **E os saltos de relógio?** | Medimos −2,4 s/+5,1 s no WSL2, no host e no contêiner (mesmo kernel). Correlacionamos por `request_id`; latências usam relógio monotônico; limiar de 30 s tem folga. |
 | **O que falta?** | Experimentos E2–E4 e E6, incidente (Hora 7), relatório F, SLI na borda, ensaio da demo. Está no slide 5 e em `docs/E_matriz_experimentos.md`. |

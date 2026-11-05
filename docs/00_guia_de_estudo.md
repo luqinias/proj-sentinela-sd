@@ -53,10 +53,10 @@ evidencias/preliminar/      saídas reais com horário (02/11/2026)
 
 | Situação | Observado | Arquivo |
 |---|---|---|
-| Normal, 20 req | A 10 / B 10, todas 200, ~1 ms | `04` |
+| Normal, 20 req | A 10 / B 10, todas 200, ~1 ms | `05` (bloco final), `05b` — em `04` deu B 20 (achado 8) |
 | A não pronto | live 200, ready 503; usuário 10/10 com 200 via B; watchdog DOWN após 3 × 503 (15 s); UP na 1ª sonda OK | `03` |
-| A parado | 20/20 com 200 via B; 2–3 req a ~1,09 s; DOWN em 14,4 s; `NoDown` firing ~23 s; `ColetaFalhando` antes, em ~15 s | `05`, `05b` |
-| A volta (`start`) | watchdog UP em 2,2–3,5 s; tráfego volta em 9,4–10,5 s; `RestartCount=0` | `05`, `11` |
+| A parado | 20/20 com 200 via B; 2–3 req a ~1,09 s (`05b`, `05c`, ensaio); DOWN em 13,5–16,8 s; `NoDown` ativo em ~22 s (`05`); `ColetaFalhando` antes | `05`, `05b`, `05c` |
+| A volta (`start`) | watchdog UP em 2,2–3,5 s; tráfego volta em **até ~10 s** (medido: ≤ 4,6 s, 9,4 s, 10,5 s — depende da fase do ciclo de re-resolução); `RestartCount=0` | `05`, `11` |
 | Config quebrada | `nginx -t` aponta arquivo e linha; Nginx em produção intacto | `06` |
 | Portas | só `*:8080` e `127.0.0.1:9090`; `/metrics` e `/admin` → 404; 9100 sem conexão | `09` |
 | Relógio | saltos −2,4 s / +5,1 s a cada ~30 s | `10` |
@@ -67,7 +67,8 @@ Ver `docs/achados.md`. Resumo para falar em 20 s:
 1. Timeout da sonda não cobria DNS → prazo total na thread.
 2. `increase()` extrapolou → flapping falso → `changes()`.
 3. Teste sintético conta para o `max_fails` do Nginx.
-4. Monitor e balanceador discordam ~8 s na volta (DNS `valid=10s`).
+4. Monitor e balanceador discordam por até ~8 s na volta (DNS `valid=10s`).
+8. Nó volta a ficar pronto, mas o Nginx o exclui por até 10 s (`fail_timeout` renovado pela sonda sintética).
 5. SLI de erro no nó contou 503 que o usuário nunca viu → corrigido; o certo é medir na borda.
 6. Healthcheck do Nginx passava pelos nós → `/nginx/live` local.
 7. Relógio do WSL2 salta → correlacionar por `request_id`.

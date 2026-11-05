@@ -21,7 +21,7 @@
 | Nginx e watchdog veem o mesmo caminho de rede? | Não necessariamente. Testar de **mais de um ponto**: `scripts/admin.sh check rust-a` (parte de rust-b), `docker compose exec watchdog wget -qO- -T 2 http://rust-a:8080/health/ready`, `docker compose exec nginx wget …` |
 | Qual a idade da última métrica? | `time() - max(watchdog_last_probe_timestamp_seconds)` e `up{job="watchdog"}`; alerta `MonitorParado` (que no cenário do professor **não existia** — no nosso existe) |
 
-Já observamos situações parecidas nos nossos testes: watchdog e Nginx discordando por ~8 s
+Já observamos situações parecidas nos nossos testes: watchdog e Nginx discordando por até ~8 s
 na recuperação (achado 4) e sonda com prazo estourado por DNS (achado 1).
 
 ## Estrutura do relatório (a preencher na Hora 7–8)

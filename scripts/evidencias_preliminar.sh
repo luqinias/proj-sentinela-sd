@@ -79,6 +79,9 @@ docker compose start rust-a >/dev/null 2>&1
 
 # --------------------------------------------------------------------------- 04
 {
+  # Achado 8: com rust-a não pronto, a sonda sintética renovou o fail_timeout=10s do
+  # Nginx; esperar a janela expirar antes de medir o balanceamento.
+  esperar 12 "fail_timeout=10s do Nginx expira após a última recusa 503 de rust-a"
   sec "HORA 4 — 20 requisições com os dois nós de pé (round-robin)"
   run scripts/teste_sintetico.sh 20
   sec "Correlação: o mesmo request_id no Nginx e no Rust"
@@ -111,7 +114,7 @@ docker compose start rust-a >/dev/null 2>&1
   esperar 4 "rust-a sobe, watchdog vê UP na próxima sondagem"
   docker compose logs --no-log-prefix --since 10s watchdog 2>&1 | grep -E 'transicao' | tail -3
   docker compose logs --no-log-prefix --since 10s rust-a 2>&1 | grep startup
-  sec "6 requisições ~4 s após o start: watchdog já vê UP, mas o Nginx ainda NÃO (janela do resolver valid=10s)"
+  sec "6 requisições ~4 s após o start (PREVISÃO: o Nginx pode ainda não ter re-resolvido rust-a; valid=10s => atraso de 0 a ~10 s)"
   run scripts/teste_sintetico.sh 6
   esperar 10 "Nginx re-resolve rust-a (valid=10s) e o recoloca no pool"
   sec "20 requisições após a re-resolução (A volta a receber tráfego)"

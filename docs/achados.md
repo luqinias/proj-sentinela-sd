@@ -9,10 +9,11 @@ de **inferência** (nossa explicação) e diz o que foi feito.
 | 1 | Sonda do watchdog levava 2,8–3,6 s apesar de `TIMEOUT=2` | Média | **Corrigido** |
 | 2 | Alerta `WatchdogFlapping` disparou com só 2 ciclos DOWN→UP | Baixa | **Corrigido** |
 | 3 | A 3ª falha que tira o nó do pool veio do teste sintético, não do usuário | Informativo | Documentado |
-| 4 | Watchdog vê o nó UP em ~2 s, mas o tráfego só volta em ~10 s | Média | Documentado; experimento na Hora 6 |
+| 4 | Watchdog vê o nó UP em ~2–3 s, mas o tráfego leva até ~10 s para voltar | Média | Documentado; experimento na Hora 6 |
 | 5 | `TaxaErro5xxAlta` disparou sem nenhum erro chegar ao usuário | Alta (falso positivo) | **Corrigido** (parcial) |
 | 6 | Liveness do Nginx dependia dos nós | Média | **Corrigido** |
 | 7 | Relógio do host (WSL2) salta −2,4 s / +5,1 s | Média | Documentado; mitigado |
+| 8 | Nó volta a ficar pronto, mas o Nginx ainda o exclui por até 10 s | Média | Documentado (encontrado em 05/11 na revisão das evidências); script corrigido |
 
 ---
 
@@ -53,11 +54,16 @@ de **inferência** (nossa explicação) e diz o que foi feito.
 
 * **Fato** (`11_tempo_retorno_trafego.txt`): após `docker compose start rust-a`, o watchdog
   registrou `transicao=UP` em ~2,2 s, mas a primeira requisição de usuário atendida por
-  rust-a veio em **10,5 s**. No intervalo, o error log mostra `rust-a could not be resolved`.
+  rust-a veio em **10,5 s** (rodada 1) e **9,4 s** (rodada 2). No intervalo, o error log mostra
+  `rust-a could not be resolved`. Porém, em `05_no_parado_e_recuperacao.txt` o tráfego já
+  tinha voltado **≤ 4,6 s** após o start (start 23:23:53.61; 1ª resposta de rust-a 23:23:58.22).
+  O título daquela seção ("o Nginx ainda NÃO") era a previsão, e foi **refutada**.
 * **Inferência**: com `server rust-a:8080 resolve` e `resolver 127.0.0.11 valid=10s`, quando
   o contêiner para o nome some do DNS e o Nginx tira o servidor do upstream; ele só volta
-  na próxima re-resolução (até 10 s). O `fail_timeout=10s` também contribui.
-* **Por que importa**: watchdog e Nginx **discordam** por ~8 s. Para o incidente da Hora 7,
+  na próxima re-resolução. Como a re-resolução ocorre num ciclo de 10 s que não está
+  sincronizado com o `start`, o atraso fica **entre 0 e ~10 s** conforme a fase do ciclo
+  (3 medições: ≤ 4,6 s, 9,4 s, 10,5 s). O `fail_timeout=10s` também contribui.
+* **Por que importa**: watchdog e Nginx **discordam** por até ~8 s. Para o incidente da Hora 7,
   "o watchdog diz UP" não significa "o nó está recebendo tráfego".
 * **Próximo passo** (Hora 6): repetir com `valid=5s` e sem `resolve` e comparar o tempo de
   retorno (trade-off: mais consultas DNS × retorno mais rápido; sem `resolve`, um IP novo
@@ -96,3 +102,26 @@ de **inferência** (nossa explicação) e diz o que foi feito.
   eventos; `time() - última_sondagem` pode errar em até ~5 s.
 * **Mitigação**: correlacionar por `request_id`; latências medidas com relógio monotônico
   (watchdog e Rust já fazem); limiar de `MonitorParado` (30 s) com folga sobre 5 s.
+
+## 8. O nó volta a ficar pronto, mas o Nginx continua a excluí-lo
+
+Encontrado em 05/11, ao revisar as evidências para a apresentação.
+
+* **Fato** (`04_balanceamento_20req.txt`): o título diz "os dois nós de pé", mas as 20
+  requisições foram **todas para rust-b** (23:23:20.8–21.1). Logo depois, em `05`, as 20
+  requisições com rust-a parado não tiveram **nenhuma** requisição lenta (~1 ms cada), ao
+  contrário de `05b`/`05c` (2–3 a ~1,09 s).
+* **Fato** (error log em `05`): `23:23:13 … upstream server temporarily disabled … client: 172.20.0.6`
+  (o watchdog, teste sintético), com `upstream_status=503, 200`. A prontidão de rust-a foi
+  restaurada (`ready=1`) por volta de 23:23:13.6 (`03`), praticamente no mesmo instante.
+* **Inferência**: durante o teste de readiness (`03`), a sonda sintética passa pelo Nginx a
+  cada 5 s e recebe 503 de rust-a, o que **renova** a exclusão do `fail_timeout=10s`. A última
+  falha (23:23:13.67) manteve rust-a fora do pool até ~23:23:23.7. As evidências `04`
+  (23:23:20) e o início de `05` (23:23:22) caíram dentro dessa janela.
+* **Por que importa**: "o nó voltou a ficar pronto" não significa "o nó voltou ao
+  balanceamento". É a mesma discordância monitor × balanceador do achado 4, por outro
+  mecanismo (verificação passiva do Nginx).
+* **Correção**: o 10/10 citado na apresentação vem de `05` (bloco final) e `05b`, não de `04`.
+  O script `scripts/evidencias_preliminar.sh` agora espera 12 s após restaurar a prontidão
+  antes de medir o balanceamento. Os arquivos de 02/11 foram mantidos como estão, porque
+  são evidência do que de fato aconteceu.
