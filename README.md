@@ -6,7 +6,7 @@ Nginx reparte o tráfego entre duas instâncias de uma aplicação Rust; um watc
 independente sonda a saúde dos nós e o caminho do usuário; o Prometheus coleta
 métricas e avalia alertas. Tudo em Docker Compose, numa única máquina.
 
-> **Equipe:** _(preencher)_ · **Líder:** _(preencher)_ · Papéis: Infra (Compose/Nginx),
+> **Equipe:** José Lucas · Gabriel Azevedo · Alex Burdelis · **Líder:** _(preencher)_ · Papéis: Infra (Compose/Nginx),
 > Aplicação (Rust/health checks), Observabilidade (watchdog/métricas/alertas), Relator.
 
 ## Estrutura

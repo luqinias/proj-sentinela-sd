@@ -94,6 +94,7 @@ function tx(slide, text, o) { slide.addText(text, Object.assign({ isTextBox: tru
   s.addShape(pres.ShapeType.roundRect, { x: 2.15, y: 1.35, w: 5.65, h: 5.45, rectRadius: 0.1, objectName: "host",
     fill: { color: C.background1 }, line: { color: C.accent3, width: 1.5, dashType: "dash" } });
   tx(s, "1 host WSL2 · 1 Docker Engine · rede \"sentinel\"", { x: 2.35, y: 6.42, w: 5.3, h: 0.3, fontSize: 12, color: C.accent3, italic: true });
+  tx(s, "Equipe: José Lucas · Gabriel Azevedo · Alex Burdelis", { x: 0.6, y: 6.98, w: 9, h: 0.3, fontSize: 12, color: C.accent5 });
 
   const box = (x, y, w, h, t1, t2, border, name) => {
     card(s, x, y, w, h, name, { line: border, lineW: border === C.accent3 ? 2.5 : 2 });

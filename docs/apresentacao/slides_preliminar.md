@@ -35,6 +35,8 @@ style: |
 
 Rust A/B **não** são SPOF (redundância 2×). Detalhe: `docs/A_arquitetura_e_spof.md`
 
+<span class="small">**Equipe:** José Lucas · Gabriel Azevedo · Alex Burdelis</span>
+
 ---
 
 <!-- Slide 2 — Integrante 2 (Aplicação) — ~75 s -->

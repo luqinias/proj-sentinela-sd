@@ -90,4 +90,4 @@ parado, erro 500 — vão justamente explorar essas discordâncias."
 - [ ] Slides exportados em PDF (`docs/apresentacao/slides_preliminar.md` → Marp → PDF)
 - [ ] Cronometrado ≤ 5 min; cada um sabe sua frase do slide 5
 - [ ] Nenhuma senha/token na tela; terminal com fonte grande
-- [ ] Nomes da equipe preenchidos no README e no slide 1
+- [x] Nomes da equipe preenchidos no README e no slide 1 (líder ainda a definir)

@@ -1,2 +1,4 @@
 rust-app/target/
 *.tar
+__pycache__/
+*.pyc
